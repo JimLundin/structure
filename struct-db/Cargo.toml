@@ -1,0 +1,13 @@
+[package]
+name = "struct-db"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+struct-db-derive = { path = "../struct-db-derive" }
+serde.workspace = true
+bincode.workspace = true
+parking_lot = "0.12"
+anyhow = "1.0"
