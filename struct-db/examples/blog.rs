@@ -46,14 +46,19 @@ fn main() -> anyhow::Result<()> {
     println!("=== Blog System Example ===\n");
 
     // Setup database
-    let db = Database::open("./data/blog")?;
-    db.register:::<Author>();
-    db.register:::<Post>();
-    db.register:::<Comment>();
-    db.register:::<Tag>();
-    db.register:::<PostTag>();
+    let db = Database::open("./data/blog")?
 
-    println!("1. Creating authors...");
+        .register::<Author>()
+
+        .register::<Post>()
+
+        .register::<Comment>()
+
+        .register::<Tag>()
+
+        .register::<PostTag>()
+
+        .build()?;println!("1. Creating authors...");
     let alice = db.insert(Author {
         username: "alice_dev".to_string(),
         full_name: "Alice Developer".to_string(),
@@ -169,9 +174,9 @@ fn main() -> anyhow::Result<()> {
 
     println!("5. Querying published posts...");
     let published = db
-        .query::<Post>()
+        .query::<Post>()?
         .filter(|p| p.published)
-        .sort_by(|p| p.created_at.to_string())
+        .sort_by_key(|p| &p.created_at)
         .collect();
 
     println!("   Found {} published posts:", published.len());
@@ -185,9 +190,9 @@ fn main() -> anyhow::Result<()> {
 
     println!("6. Finding popular posts (views > 1000)...");
     let popular = db
-        .query::<Post>()
+        .query::<Post>()?
         .filter(|p| p.views > 1000)
-        .sort_by(|p| format!("{:010}", 999999999 - p.views))  // Sort descending
+        .sort_by(|a, b| b.views.cmp(&a.views))  // Sort descending
         .collect();
 
     println!("   Popular posts:");
@@ -198,11 +203,11 @@ fn main() -> anyhow::Result<()> {
 
     println!("7. Finding posts by author...");
     let alice_posts = db
-        .query::<Post>()
+        .query::<Post>()?
         .filter(|p| p.author.id() == alice)
         .collect();
 
-    let author_info = db.get_cloned(alice)?;
+    let author_info = db.get(alice)?;
     println!("   Posts by {} (@{}):", author_info.full_name, author_info.username);
     for (_, post) in &alice_posts {
         println!("     - '{}'", post.title);
@@ -211,7 +216,7 @@ fn main() -> anyhow::Result<()> {
 
     println!("8. Finding posts with a specific tag...");
     let rust_tagged = db
-        .query::<PostTag>()
+        .query::<PostTag>()?
         .filter(|pt| pt.tag.id() == rust_tag)
         .collect();
 
@@ -224,12 +229,12 @@ fn main() -> anyhow::Result<()> {
 
     println!("9. Finding comments on a specific post...");
     let post1_comments = db
-        .query::<Comment>()
+        .query::<Comment>()?
         .filter(|c| c.post.id() == post1)
-        .sort_by(|c| c.created_at.to_string())
+        .sort_by_key(|c| &c.created_at)
         .collect();
 
-    let post_info = db.get_cloned(post1)?;
+    let post_info = db.get(post1)?;
     println!("   Comments on '{}':", post_info.title);
     for (_, comment) in &post1_comments {
         let author = comment.author.get(&db)?;
@@ -238,7 +243,7 @@ fn main() -> anyhow::Result<()> {
     println!();
 
     println!("10. Finding most commented posts...");
-    let all_comments = db.query::<Comment>().collect();
+    let all_comments = db.query::<Comment>()?.collect();
 
     let mut comment_counts: std::collections::HashMap<Id<Post>, usize> =
         std::collections::HashMap::new();
@@ -249,14 +254,14 @@ fn main() -> anyhow::Result<()> {
 
     println!("   Post comment counts:");
     for (post_id, count) in &comment_counts {
-        let post = db.get_cloned(*post_id)?;
+        let post = db.get(*post_id)?;
         println!("     - '{}': {} comments", post.title, count);
     }
     println!();
 
     println!("11. Author activity summary...");
-    let all_posts = db.query::<Post>().collect();
-    let all_comments = db.query::<Comment>().collect();
+    let all_posts = db.query::<Post>()?.collect();
+    let all_comments = db.query::<Comment>()?.collect();
 
     let mut author_stats: std::collections::HashMap<Id<Author>, (usize, usize)> =
         std::collections::HashMap::new();
@@ -273,7 +278,7 @@ fn main() -> anyhow::Result<()> {
 
     println!("   Author activity:");
     for (author_id, (posts, comments)) in &author_stats {
-        let author = db.get_cloned(*author_id)?;
+        let author = db.get(*author_id)?;
         println!("     - @{}: {} posts, {} comments",
                  author.username, posts, comments);
     }
@@ -281,11 +286,11 @@ fn main() -> anyhow::Result<()> {
 
     println!("12. Finding all tags for a post...");
     let post2_tags = db
-        .query::<PostTag>()
+        .query::<PostTag>()?
         .filter(|pt| pt.post.id() == post2)
         .collect();
 
-    let post2_info = db.get_cloned(post2)?;
+    let post2_info = db.get(post2)?;
     println!("   Tags for '{}':", post2_info.title);
     for (_, post_tag) in &post2_tags {
         let tag = post_tag.tag.get(&db)?;
@@ -294,19 +299,19 @@ fn main() -> anyhow::Result<()> {
     println!();
 
     println!("13. Incrementing post views...");
-    let before = db.get_cloned(post1)?;
+    let before = db.get(post1)?;
     println!("   Views before: {}", before.views);
 
     db.update(post1, |post| {
         post.views += 1;
     })?;
 
-    let after = db.get_cloned(post1)?;
+    let after = db.get(post1)?;
     println!("   Views after: {}\n", after.views);
 
     println!("14. Publishing a draft...");
     let drafts = db
-        .query::<Post>()
+        .query::<Post>()?
         .filter(|p| !p.published)
         .collect();
 
@@ -322,7 +327,7 @@ fn main() -> anyhow::Result<()> {
 
     println!("15. Complex query: Popular published Rust tutorials...");
     let rust_posts_ids: Vec<Id<Post>> = db
-        .query::<PostTag>()
+        .query::<PostTag>()?
         .filter(|pt| pt.tag.id() == rust_tag || pt.tag.id() == tutorial_tag)
         .collect()
         .iter()
@@ -330,8 +335,8 @@ fn main() -> anyhow::Result<()> {
         .collect();
 
     let popular_rust_tutorials = db
-        .query::<Post>()
-        .filter(|p| p.published && p.views > 1000 && rust_posts_ids.contains(&Id::new(0)))
+        .query::<Post>()?
+        .filter(|p| p.published && p.views > 1000 && rust_posts_ids.contains(&Id::from(0)))
         .collect();
 
     println!("   Found {} matching posts:", popular_rust_tutorials.len());
@@ -341,16 +346,16 @@ fn main() -> anyhow::Result<()> {
     println!();
 
     println!("16. Database statistics:");
-    println!("   Authors: {}", db.query::<Author>().count());
-    println!("   Posts: {}", db.query::<Post>().count());
-    println!("   Published: {}", db.query::<Post>().filter(|p| p.published).count());
-    println!("   Comments: {}", db.query::<Comment>().count());
-    println!("   Tags: {}", db.query::<Tag>().count());
-    println!("   Post-Tag associations: {}", db.query::<PostTag>().count());
+    println!("   Authors: {}", db.query::<Author>()?.count());
+    println!("   Posts: {}", db.query::<Post>()?.count());
+    println!("   Published: {}", db.query::<Post>()?.filter(|p| p.published).count());
+    println!("   Comments: {}", db.query::<Comment>()?.count());
+    println!("   Tags: {}", db.query::<Tag>()?.count());
+    println!("   Post-Tag associations: {}", db.query::<PostTag>()?.count());
     println!();
 
     println!("17. Finding author with most posts...");
-    let all_posts = db.query::<Post>().collect();
+    let all_posts = db.query::<Post>()?.collect();
     let mut post_counts: std::collections::HashMap<Id<Author>, usize> =
         std::collections::HashMap::new();
 
@@ -361,17 +366,17 @@ fn main() -> anyhow::Result<()> {
     if let Some((top_author_id, count)) = post_counts.iter()
         .max_by_key(|(_, &count)| count)
     {
-        let author = db.get_cloned(*top_author_id)?;
+        let author = db.get(*top_author_id)?;
         println!("   Most prolific author: @{} with {} posts", author.username, count);
     }
     println!();
 
     println!("18. Deleting a comment...");
-    let all_comments = db.query::<Comment>().collect();
+    let all_comments = db.query::<Comment>()?.collect();
     if let Some((comment_id, _)) = all_comments.first() {
-        println!("   Comments before: {}", db.query::<Comment>().count());
+        println!("   Comments before: {}", db.query::<Comment>()?.count());
         db.delete(*comment_id)?;
-        println!("   Comments after: {}", db.query::<Comment>().count());
+        println!("   Comments after: {}", db.query::<Comment>()?.count());
     }
     println!();
 

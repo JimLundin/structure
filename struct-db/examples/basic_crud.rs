@@ -44,7 +44,7 @@ fn main() -> anyhow::Result<()> {
 
     // 3. READ - Retrieve a single user
     println!("3. Reading user by ID...");
-    let user = db.get_cloned(alice_id)?;
+    let user = db.get(alice_id)?;
     println!("   Found: {} ({}, age {})\n", user.name, user.email, user.age);
 
     // 4. READ - Query all users
@@ -59,7 +59,7 @@ fn main() -> anyhow::Result<()> {
     // 5. READ - Query with filters
     println!("5. Querying users over 30...");
     let older_users = db
-        .query::<User>()
+        .query::<User>()?
         .filter(|u| u.age > 30)
         .collect();
     println!("   Found {} users:", older_users.len());
@@ -71,8 +71,8 @@ fn main() -> anyhow::Result<()> {
     // 6. READ - Query with sorting
     println!("6. Querying users sorted by name...");
     let sorted_users = db
-        .query::<User>()
-        .sort_by(|u| u.name.clone())
+        .query::<User>()?
+        .sort_by_key(|u| &u.name)
         .collect();
     for (id, user) in &sorted_users {
         println!("     - {}: {}", id, user.name);
@@ -81,12 +81,12 @@ fn main() -> anyhow::Result<()> {
 
     // 7. UPDATE - Modify a user
     println!("7. Updating user...");
-    println!("   Before: {}", db.get_cloned(bob_id)?email);
+    println!("   Before: {}", db.get(bob_id)?.email);
     db.update(bob_id, |user| {
         user.email = "robert.smith@example.com".to_string();
         user.age = 26;
     })?;
-    let updated_user = db.get_cloned(bob_id)?;
+    let updated_user = db.get(bob_id)?;
     println!("   After: {} (age {})\n", updated_user.email, updated_user.age);
 
     // 8. DELETE - Remove a user
@@ -107,7 +107,7 @@ fn main() -> anyhow::Result<()> {
 
     // 10. Demonstrate error handling
     println!("10. Error handling...");
-    match db.get_cloned(charlie_id) {
+    match db.get(charlie_id) {
         Ok(user) => println!("   Unexpected: Found deleted user {}", user.name),
         Err(e) => println!("   Expected error: {}", e),
     }
@@ -152,7 +152,7 @@ fn main() -> anyhow::Result<()> {
         .register::<User>()
         .build()?;
 
-    let reloaded_users = db.query::<User>()??collect();
+    let reloaded_users = db.query::<User>()?.collect();
     println!("   Reloaded {} users after restart:", reloaded_users.len());
     for (id, user) in &reloaded_users {
         println!("     - {}: {}", id, user.name);

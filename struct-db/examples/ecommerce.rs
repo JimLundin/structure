@@ -39,13 +39,17 @@ fn main() -> anyhow::Result<()> {
     println!("=== E-Commerce System Example ===\n");
 
     // Setup database
-    let db = Database::open("./data/ecommerce")?;
-    db.register:::<Customer>();
-    db.register:::<Product>();
-    db.register:::<Order>();
-    db.register:::<OrderItem>();
+    let db = Database::open("./data/ecommerce")?
 
-    println!("1. Adding customers...");
+        .register::<Customer>()
+
+        .register::<Product>()
+
+        .register::<Order>()
+
+        .register::<OrderItem>()
+
+        .build()?;println!("1. Adding customers...");
     let customer1 = db.insert(Customer {
         name: "Sarah Connor".to_string(),
         email: "sarah@example.com".to_string(),
@@ -133,7 +137,7 @@ fn main() -> anyhow::Result<()> {
 
     println!("4. Querying orders by status...");
     let pending_orders = db
-        .query::<Order>()
+        .query::<Order>()?
         .filter(|o| o.status == "pending")
         .collect();
 
@@ -147,7 +151,7 @@ fn main() -> anyhow::Result<()> {
 
     println!("5. Finding all items in an order...");
     let order1_items = db
-        .query::<OrderItem>()
+        .query::<OrderItem>()?
         .filter(|item| item.order.id() == order1)
         .collect();
 
@@ -161,7 +165,7 @@ fn main() -> anyhow::Result<()> {
 
     println!("6. Finding all orders for a customer...");
     let sarah_orders = db
-        .query::<Order>()
+        .query::<Order>()?
         .filter(|order| order.customer.id() == customer1)
         .collect();
 
@@ -173,7 +177,7 @@ fn main() -> anyhow::Result<()> {
     println!();
 
     println!("7. Finding popular products (by order count)...");
-    let all_items = db.query::<OrderItem>().collect();
+    let all_items = db.query::<OrderItem>()?.collect();
 
     // Count orders per product
     let mut product_counts: std::collections::HashMap<Id<Product>, u32> =
@@ -185,38 +189,38 @@ fn main() -> anyhow::Result<()> {
 
     println!("   Product popularity:");
     for (product_id, count) in &product_counts {
-        let product = db.get_cloned(*product_id)?;
+        let product = db.get(*product_id)?;
         println!("     - {}: {} orders", product.name, count);
     }
     println!();
 
     println!("8. Updating order status...");
-    let order_before = db.get_cloned(order1)?;
+    let order_before = db.get(order1)?;
     println!("   Order {} status before: {}", order1, order_before.status);
 
     db.update(order1, |order| {
         order.status = "shipped".to_string();
     })?;
 
-    let order_after = db.get_cloned(order1)?;
+    let order_after = db.get(order1)?;
     println!("   Order {} status after: {}\n", order1, order_after.status);
 
     println!("9. Updating product stock after purchase...");
-    let laptop_before = db.get_cloned(laptop)?;
+    let laptop_before = db.get(laptop)?;
     println!("   Laptop stock before: {}", laptop_before.stock);
 
     db.update(laptop, |product| {
         product.stock -= 1;
     })?;
 
-    let laptop_after = db.get_cloned(laptop)?;
+    let laptop_after = db.get(laptop)?;
     println!("   Laptop stock after: {}\n", laptop_after.stock);
 
     println!("10. Finding low-stock products...");
     let low_stock = db
-        .query::<Product>()
+        .query::<Product>()?
         .filter(|p| p.stock < 60)
-        .sort_by(|p| p.stock.to_string())
+        .sort_by_key(|p| &p.stock)
         .collect();
 
     println!("   Products with stock < 60:");
@@ -227,7 +231,7 @@ fn main() -> anyhow::Result<()> {
     println!();
 
     println!("11. Calculating total revenue...");
-    let all_orders = db.query::<Order>().collect();
+    let all_orders = db.query::<Order>()?.collect();
     let total_revenue: f64 = all_orders.iter()
         .map(|(_, order)| order.total)
         .sum();
@@ -235,9 +239,9 @@ fn main() -> anyhow::Result<()> {
 
     println!("12. Finding high-value orders...");
     let high_value = db
-        .query::<Order>()
+        .query::<Order>()?
         .filter(|o| o.total > 500.0)
-        .sort_by(|o| format!("{:.2}", -o.total))  // Sort descending
+        .sort_by(|a, b| b.total.partial_cmp(&a.total).unwrap())  // Sort descending
         .collect();
 
     println!("   Orders over $500:");
@@ -251,7 +255,7 @@ fn main() -> anyhow::Result<()> {
     println!("13. Customer analytics...");
 
     // Calculate total spent per customer
-    let all_orders = db.query::<Order>().collect();
+    let all_orders = db.query::<Order>()?.collect();
     let mut customer_spending: std::collections::HashMap<Id<Customer>, f64> =
         std::collections::HashMap::new();
 
@@ -261,16 +265,16 @@ fn main() -> anyhow::Result<()> {
 
     println!("   Customer spending:");
     for (customer_id, total) in &customer_spending {
-        let customer = db.get_cloned(*customer_id)?;
+        let customer = db.get(*customer_id)?;
         println!("     - {}: ${:.2}", customer.name, total);
     }
     println!();
 
     println!("14. Database statistics:");
-    println!("   Customers: {}", db.query::<Customer>().count());
-    println!("   Products: {}", db.query::<Product>().count());
-    println!("   Orders: {}", db.query::<Order>().count());
-    println!("   Order Items: {}", db.query::<OrderItem>().count());
+    println!("   Customers: {}", db.query::<Customer>()?.count());
+    println!("   Products: {}", db.query::<Product>()?.count());
+    println!("   Orders: {}", db.query::<Order>()?.count());
+    println!("   Order Items: {}", db.query::<OrderItem>()?.count());
     println!();
 
     println!("15. Compacting database...");
