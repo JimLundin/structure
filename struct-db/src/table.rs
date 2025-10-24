@@ -1,3 +1,4 @@
+use crate::error::{Error, Result};
 use crate::{Id, Query, TableType};
 use parking_lot::RwLock;
 use std::collections::HashMap;
@@ -54,7 +55,7 @@ impl<T: TableType> Table<T> {
     }
 
     /// Update a record by ID
-    pub fn update<F>(&self, id: Id<T>, f: F) -> crate::Result<()>
+    pub fn update<F>(&self, id: Id<T>, f: F) -> Result<()>
     where
         F: FnOnce(&mut T),
     {
@@ -63,17 +64,17 @@ impl<T: TableType> Table<T> {
             f(record);
             Ok(())
         } else {
-            Err(anyhow::anyhow!("Record not found: {}", id.value()))
+            Err(Error::RecordNotFound(id.value()))
         }
     }
 
     /// Delete a record by ID
-    pub fn delete(&self, id: Id<T>) -> crate::Result<()> {
+    pub fn delete(&self, id: Id<T>) -> Result<()> {
         let mut data = self.data.write();
         if data.records.remove(&id.value()).is_some() {
             Ok(())
         } else {
-            Err(anyhow::anyhow!("Record not found: {}", id.value()))
+            Err(Error::RecordNotFound(id.value()))
         }
     }
 

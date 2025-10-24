@@ -24,10 +24,13 @@ struct Comment {
 
 fn setup_test_db() -> (Database, TempDir) {
     let temp_dir = TempDir::new().unwrap();
-    let db = Database::open(temp_dir.path()).unwrap();
-    db.register_type::<User>();
-    db.register_type::<Post>();
-    db.register_type::<Comment>();
+    let db = Database::open(temp_dir.path())
+        .unwrap()
+        .register::<User>()
+        .register::<Post>()
+        .register::<Comment>()
+        .build()
+        .unwrap();
     (db, temp_dir)
 }
 
@@ -51,7 +54,7 @@ fn test_simple_reference() {
     let post_id = db.insert(post.clone()).unwrap();
 
     // Retrieve post
-    let retrieved_post = db.get_cloned(post_id).unwrap();
+    let retrieved_post = db.get(post_id).unwrap();
 
     // Dereference the author
     let author = retrieved_post.author.get(&db).unwrap();
@@ -80,8 +83,8 @@ fn test_multiple_references_to_same_record() {
         author: Ref::new(user_id),
     }).unwrap();
 
-    let post1 = db.get_cloned(post1_id).unwrap();
-    let post2 = db.get_cloned(post2_id).unwrap();
+    let post1 = db.get(post1_id).unwrap();
+    let post2 = db.get(post2_id).unwrap();
 
     let author1 = post1.author.get(&db).unwrap();
     let author2 = post2.author.get(&db).unwrap();
@@ -117,7 +120,7 @@ fn test_nested_references() {
     let comment_id = db.insert(comment).unwrap();
 
     // Retrieve and traverse references
-    let retrieved_comment = db.get_cloned(comment_id).unwrap();
+    let retrieved_comment = db.get(comment_id).unwrap();
     let post = retrieved_comment.post.get(&db).unwrap();
     let post_author = post.author.get(&db).unwrap();
     let comment_author = retrieved_comment.author.get(&db).unwrap();
@@ -147,7 +150,7 @@ fn test_reference_to_deleted_record() {
     db.delete(user_id).unwrap();
 
     // Try to dereference
-    let post = db.get_cloned(post_id).unwrap();
+    let post = db.get(post_id).unwrap();
     let result = post.author.get(&db);
 
     // Should fail because the user no longer exists
@@ -160,9 +163,12 @@ fn test_reference_persistence() {
     let db_path = temp_dir.path().to_path_buf();
 
     let (user_id, post_id) = {
-        let db = Database::open(&db_path).unwrap();
-        db.register_type::<User>();
-        db.register_type::<Post>();
+        let db = Database::open(&db_path)
+            .unwrap()
+            .register::<User>()
+            .register::<Post>()
+            .build()
+            .unwrap();
 
         let user_id = db.insert(User {
             name: "Alice".to_string(),
@@ -179,11 +185,14 @@ fn test_reference_persistence() {
     };
 
     // Reopen database
-    let db = Database::open(&db_path).unwrap();
-    db.register_type::<User>();
-    db.register_type::<Post>();
+    let db = Database::open(&db_path)
+        .unwrap()
+        .register::<User>()
+        .register::<Post>()
+        .build()
+        .unwrap();
 
-    let post = db.get_cloned(post_id).unwrap();
+    let post = db.get(post_id).unwrap();
     let author = post.author.get(&db).unwrap();
 
     assert_eq!(author.name, "Alice");
@@ -224,7 +233,7 @@ fn test_query_with_references() {
 
     // Query posts by Alice
     let alice_posts = db
-        .query::<Post>()
+        .query::<Post>().unwrap()
         .filter(move |p| p.author.id() == alice_id)
         .collect();
 
@@ -258,7 +267,7 @@ fn test_update_referenced_record() {
     }).unwrap();
 
     // Retrieve post and check author
-    let post = db.get_cloned(post_id).unwrap();
+    let post = db.get(post_id).unwrap();
     let author = post.author.get(&db).unwrap();
 
     assert_eq!(author.name, "Alice Smith");
@@ -296,8 +305,11 @@ fn test_circular_references() {
     }
 
     let temp_dir = TempDir::new().unwrap();
-    let db = Database::open(temp_dir.path()).unwrap();
-    db.register_type::<Node>();
+    let db = Database::open(temp_dir.path())
+        .unwrap()
+        .register::<Node>()
+        .build()
+        .unwrap();
 
     // Create node without reference first
     let node1_id = db.insert(Node {
@@ -316,7 +328,7 @@ fn test_circular_references() {
     }).unwrap();
 
     // Verify the cycle exists
-    let node1 = db.get_cloned(node1_id).unwrap();
+    let node1 = db.get(node1_id).unwrap();
     let node2 = node1.next.unwrap().get(&db).unwrap();
     let node1_again = node2.next.unwrap().get(&db).unwrap();
 

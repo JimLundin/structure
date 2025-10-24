@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use struct_db::{Database, Id, Ref, Table};
+use struct_db::{Database, Ref, Table};
 
 // Define our domain models
 
@@ -27,12 +27,11 @@ fn main() -> anyhow::Result<()> {
     println!("=== Struct-DB Sensor Data Example ===\n");
 
     // Open or create database
-    let db = Database::open("./data/sensor_db")?;
-
-    // Register types for WAL replay
-    db.register_type::<Sensor>();
-    db.register_type::<Reading>();
-    db.register_type::<Alert>();
+    let db = Database::open("./data/sensor_db")?
+        .register::<Sensor>()
+        .register::<Reading>()
+        .register::<Alert>()
+        .build()?;
 
     println!("1. Inserting sensors...");
 
@@ -87,7 +86,7 @@ fn main() -> anyhow::Result<()> {
 
     // Query all sensors
     println!("   All sensors:");
-    let sensors = db.query::<Sensor>().collect();
+    let sensors = db.query::<Sensor>()?.collect();
     for (id, sensor) in &sensors {
         println!("     - {}: {} ({})", id, sensor.location, sensor.sensor_type);
     }
@@ -95,7 +94,7 @@ fn main() -> anyhow::Result<()> {
     // Query readings with filters
     println!("\n   Readings with value > 25:");
     let high_readings = db
-        .query::<Reading>()
+        .query::<Reading>()?
         .filter(|r| r.value > 25.0)
         .collect();
 
@@ -111,8 +110,8 @@ fn main() -> anyhow::Result<()> {
     // Query with sorting
     println!("\n   All readings sorted by timestamp:");
     let sorted_readings = db
-        .query::<Reading>()
-        .sort_by(|r| r.timestamp.to_string())
+        .query::<Reading>()?
+        .sort_by_key(|r| &r.timestamp)
         .collect();
 
     for (id, reading) in &sorted_readings {
@@ -121,7 +120,7 @@ fn main() -> anyhow::Result<()> {
 
     // Query with limit
     println!("\n   First 2 readings:");
-    let limited_readings = db.query::<Reading>().limit(2).collect();
+    let limited_readings = db.query::<Reading>()?.limit(2).collect();
 
     for (id, reading) in &limited_readings {
         println!("     - {}: {}", id, reading.value);
@@ -135,7 +134,7 @@ fn main() -> anyhow::Result<()> {
     })?;
     println!("   Updated sensor location");
 
-    let updated_sensor = db.get_cloned(sensor1_id)?;
+    let updated_sensor = db.get(sensor1_id)?;
     println!("   New location: {}", updated_sensor.location);
 
     println!("\n6. Deleting data...");
@@ -144,7 +143,7 @@ fn main() -> anyhow::Result<()> {
     db.delete(alert_id)?;
     println!("   Deleted alert: {}", alert_id);
 
-    let remaining_alerts = db.query::<Alert>().count();
+    let remaining_alerts = db.query::<Alert>()?.count();
     println!("   Remaining alerts: {}", remaining_alerts);
 
     println!("\n7. Compacting WAL...");
@@ -154,9 +153,9 @@ fn main() -> anyhow::Result<()> {
     println!("   WAL compacted successfully");
 
     println!("\n8. Database statistics:");
-    println!("   Sensors: {}", db.query::<Sensor>().count());
-    println!("   Readings: {}", db.query::<Reading>().count());
-    println!("   Alerts: {}", db.query::<Alert>().count());
+    println!("   Sensors: {}", db.query::<Sensor>()?.count());
+    println!("   Readings: {}", db.query::<Reading>()?.count());
+    println!("   Alerts: {}", db.query::<Alert>()?.count());
 
     println!("\n=== Example completed successfully! ===");
 

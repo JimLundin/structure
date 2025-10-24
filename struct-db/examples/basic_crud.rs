@@ -14,8 +14,9 @@ fn main() -> anyhow::Result<()> {
 
     // 1. Open database
     println!("1. Opening database...");
-    let db = Database::open("./data/basic_crud")?;
-    db.register_type::<User>();
+    let db = Database::open("./data/basic_crud")?
+        .register::<User>()
+        .build()?;
     println!("   Database opened successfully\n");
 
     // 2. CREATE - Insert users
@@ -43,12 +44,12 @@ fn main() -> anyhow::Result<()> {
 
     // 3. READ - Retrieve a single user
     println!("3. Reading user by ID...");
-    let user = db.get_cloned(alice_id)?;
+    let user = db.get(alice_id)?;
     println!("   Found: {} ({}, age {})\n", user.name, user.email, user.age);
 
     // 4. READ - Query all users
     println!("4. Querying all users...");
-    let all_users = db.query::<User>().collect();
+    let all_users = db.query::<User>()?.collect();
     println!("   Total users: {}", all_users.len());
     for (id, user) in &all_users {
         println!("     - {}: {} ({}, age {})", id, user.name, user.email, user.age);
@@ -58,7 +59,7 @@ fn main() -> anyhow::Result<()> {
     // 5. READ - Query with filters
     println!("5. Querying users over 30...");
     let older_users = db
-        .query::<User>()
+        .query::<User>()?
         .filter(|u| u.age > 30)
         .collect();
     println!("   Found {} users:", older_users.len());
@@ -70,8 +71,8 @@ fn main() -> anyhow::Result<()> {
     // 6. READ - Query with sorting
     println!("6. Querying users sorted by name...");
     let sorted_users = db
-        .query::<User>()
-        .sort_by(|u| u.name.clone())
+        .query::<User>()?
+        .sort_by_key(|u| &u.name)
         .collect();
     for (id, user) in &sorted_users {
         println!("     - {}: {}", id, user.name);
@@ -80,24 +81,24 @@ fn main() -> anyhow::Result<()> {
 
     // 7. UPDATE - Modify a user
     println!("7. Updating user...");
-    println!("   Before: {}", db.get_cloned(bob_id)?.email);
+    println!("   Before: {}", db.get(bob_id)?.email);
     db.update(bob_id, |user| {
         user.email = "robert.smith@example.com".to_string();
         user.age = 26;
     })?;
-    let updated_user = db.get_cloned(bob_id)?;
+    let updated_user = db.get(bob_id)?;
     println!("   After: {} (age {})\n", updated_user.email, updated_user.age);
 
     // 8. DELETE - Remove a user
     println!("8. Deleting user...");
-    println!("   Users before delete: {}", db.query::<User>().count());
+    println!("   Users before delete: {}", db.query::<User>()?.count());
     db.delete(charlie_id)?;
-    println!("   Users after delete: {}", db.query::<User>().count());
+    println!("   Users after delete: {}", db.query::<User>()?.count());
     println!("   Deleted user: {}\n", charlie_id);
 
     // 9. Verify deletion
     println!("9. Verifying deletion...");
-    let remaining = db.query::<User>().collect();
+    let remaining = db.query::<User>()?.collect();
     println!("   Remaining users:");
     for (id, user) in &remaining {
         println!("     - {}: {}", id, user.name);
@@ -106,7 +107,7 @@ fn main() -> anyhow::Result<()> {
 
     // 10. Demonstrate error handling
     println!("10. Error handling...");
-    match db.get_cloned(charlie_id) {
+    match db.get(charlie_id) {
         Ok(user) => println!("   Unexpected: Found deleted user {}", user.name),
         Err(e) => println!("   Expected error: {}", e),
     }
@@ -116,11 +117,11 @@ fn main() -> anyhow::Result<()> {
     println!("11. Advanced queries...");
 
     // Count
-    let count = db.query::<User>().count();
+    let count = db.query::<User>()?.count();
     println!("   Total users: {}", count);
 
     // First match
-    if let Some((id, user)) = db.query::<User>()
+    if let Some((id, user)) = db.query::<User>()?
         .filter(|u| u.age < 30)
         .first()
     {
@@ -128,14 +129,14 @@ fn main() -> anyhow::Result<()> {
     }
 
     // Chained filters
-    let filtered = db.query::<User>()
+    let filtered = db.query::<User>()?
         .filter(|u| u.age >= 25)
         .filter(|u| u.name.starts_with("A"))
         .collect();
     println!("   Users aged 25+ with name starting with 'A': {}", filtered.len());
 
     // Limit results
-    let limited = db.query::<User>()
+    let limited = db.query::<User>()?
         .limit(1)
         .collect();
     println!("   Limited to 1 user: {}", limited.len());
@@ -147,10 +148,11 @@ fn main() -> anyhow::Result<()> {
     drop(db);
 
     println!("   Reopening database...");
-    let db = Database::open("./data/basic_crud")?;
-    db.register_type::<User>();
+    let db = Database::open("./data/basic_crud")?
+        .register::<User>()
+        .build()?;
 
-    let reloaded_users = db.query::<User>().collect();
+    let reloaded_users = db.query::<User>()?.collect();
     println!("   Reloaded {} users after restart:", reloaded_users.len());
     for (id, user) in &reloaded_users {
         println!("     - {}: {}", id, user.name);

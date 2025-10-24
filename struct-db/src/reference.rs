@@ -25,7 +25,7 @@ impl<T> Ref<T> {
     where
         T: TableType + Clone,
     {
-        db.get_cloned(self.id)
+        db.get(self.id)
     }
 }
 

@@ -30,18 +30,40 @@ impl<T: TableType> Query<T> {
         self
     }
 
-    /// Set a sort function
-    pub fn sort_by<F, K>(mut self, compare: F) -> Self
+    /// Sort by a key extracted from each record (no cloning needed)
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use struct_db::{Database, Table};
+    /// # use serde::{Serialize, Deserialize};
+    /// # #[derive(Table, Serialize, Deserialize, Clone)]
+    /// # struct User { name: String, age: u32 }
+    /// # let db = Database::open("./data")?.register::<User>().build()?;
+    /// // Sort by name without cloning
+    /// let users = db.query::<User>()?
+    ///     .sort_by_key(|u| &u.name)
+    ///     .collect();
+    ///
+    /// // Sort by age
+    /// let users = db.query::<User>()?
+    ///     .sort_by_key(|u| &u.age)
+    ///     .collect();
+    /// # Ok::<(), struct_db::Error>(())
+    /// ```
+    pub fn sort_by_key<K, F>(mut self, key_fn: F) -> Self
     where
-        F: Fn(&T) -> K + Send + Sync + 'static,
-        K: Ord,
+        F: Fn(&T) -> &K + Send + Sync + 'static,
+        K: Ord + ?Sized,
     {
-        self.sort_fn = Some(Box::new(move |a, b| compare(a).cmp(&compare(b))));
+        self.sort_fn = Some(Box::new(move |a, b| key_fn(a).cmp(key_fn(b))));
         self
     }
 
-    /// Set a custom comparison function
-    pub fn sort_by_cmp<F>(mut self, compare: F) -> Self
+    /// Set a custom comparison function for advanced sorting
+    ///
+    /// Use this when you need complex sorting logic that can't be expressed
+    /// with `sort_by_key`.
+    pub fn sort_by<F>(mut self, compare: F) -> Self
     where
         F: Fn(&T, &T) -> std::cmp::Ordering + Send + Sync + 'static,
     {
