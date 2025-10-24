@@ -8,10 +8,13 @@ use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
+type ReplayFn = Box<dyn Fn(&Database) -> Result<()> + Send + Sync>;
+
 /// Builder for creating a Database with registered types
 pub struct DatabaseBuilder {
     path: PathBuf,
     registered_types: HashMap<TypeId, String>,
+    replay_callbacks: Vec<ReplayFn>,
 }
 
 impl DatabaseBuilder {
@@ -21,6 +24,12 @@ impl DatabaseBuilder {
     /// This ensures type safety and enables proper WAL replay.
     pub fn register<T: TableType>(mut self) -> Self {
         self.registered_types.insert(TypeId::of::<T>(), T::type_name().to_string());
+
+        // Store a callback to replay WAL entries for this type
+        self.replay_callbacks.push(Box::new(|db: &Database| {
+            db.register_type_internal::<T>()
+        }));
+
         self
     }
 
@@ -39,8 +48,10 @@ impl DatabaseBuilder {
             wal: Arc::new(wal),
         };
 
-        // Replay WAL to restore state for all registered types
-        db.replay_wal()?;
+        // Replay WAL for each registered type using the callbacks
+        for replay_fn in self.replay_callbacks {
+            replay_fn(&db)?;
+        }
 
         Ok(db)
     }
@@ -77,6 +88,7 @@ impl Database {
         Ok(DatabaseBuilder {
             path,
             registered_types: HashMap::new(),
+            replay_callbacks: Vec::new(),
         })
     }
 
@@ -446,6 +458,8 @@ impl Database {
         let mut table_data = table.write();
 
         table_data.records.insert(id, record);
+
+        // Update next_id to ensure we don't reuse IDs
         if id >= table_data.next_id {
             table_data.next_id = id + 1;
         }

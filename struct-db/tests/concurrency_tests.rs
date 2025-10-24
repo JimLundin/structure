@@ -113,8 +113,13 @@ fn test_concurrent_inserts() {
 #[test]
 fn test_concurrent_updates() {
     let temp_dir = TempDir::new().unwrap();
-    let db = Arc::new(Database::open(temp_dir.path()).unwrap());
-    db.register::<Counter>();
+    let db = Arc::new(
+        Database::open(temp_dir.path())
+            .unwrap()
+            .register::<Counter>()
+            .build()
+            .unwrap()
+    );
 
     // Insert a counter
     let id = db.insert(Counter { value: 0 }).unwrap();
@@ -150,8 +155,13 @@ fn test_concurrent_updates() {
 #[test]
 fn test_concurrent_mixed_operations() {
     let temp_dir = TempDir::new().unwrap();
-    let db = Arc::new(Database::open(temp_dir.path()).unwrap());
-    db.register::<User>();
+    let db = Arc::new(
+        Database::open(temp_dir.path())
+            .unwrap()
+            .register::<User>()
+            .build()
+            .unwrap()
+    );
 
     // Insert some initial data
     let id = db.insert(User {
@@ -223,8 +233,13 @@ fn test_concurrent_mixed_operations() {
 #[test]
 fn test_concurrent_queries() {
     let temp_dir = TempDir::new().unwrap();
-    let db = Arc::new(Database::open(temp_dir.path()).unwrap());
-    db.register::<User>();
+    let db = Arc::new(
+        Database::open(temp_dir.path())
+            .unwrap()
+            .register::<User>()
+            .build()
+            .unwrap()
+    );
 
     // Insert test data
     for i in 0..50 {
@@ -263,8 +278,13 @@ fn test_concurrent_queries() {
 #[test]
 fn test_concurrent_delete_and_read() {
     let temp_dir = TempDir::new().unwrap();
-    let db = Arc::new(Database::open(temp_dir.path()).unwrap());
-    db.register::<User>();
+    let db = Arc::new(
+        Database::open(temp_dir.path())
+            .unwrap()
+            .register::<User>()
+            .build()
+            .unwrap()
+    );
 
     // Insert many records
     let mut ids = vec![];
@@ -325,8 +345,13 @@ fn test_concurrent_delete_and_read() {
 #[test]
 fn test_concurrent_query_and_insert() {
     let temp_dir = TempDir::new().unwrap();
-    let db = Arc::new(Database::open(temp_dir.path()).unwrap());
-    db.register::<User>();
+    let db = Arc::new(
+        Database::open(temp_dir.path())
+            .unwrap()
+            .register::<User>()
+            .build()
+            .unwrap()
+    );
 
     // Insert initial data
     for i in 0..20 {

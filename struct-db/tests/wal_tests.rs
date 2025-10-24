@@ -16,7 +16,11 @@ fn test_wal_file_created() {
     let temp_dir = TempDir::new().unwrap();
     let db_path = temp_dir.path().to_path_buf();
 
-    let _db = Database::open(&db_path).unwrap();
+    let _db = Database::open(&db_path)
+        .unwrap()
+        .register::<TestRecord>()
+        .build()
+        .unwrap();
 
     // WAL file should be created
     let wal_path = db_path.join("wal.log");

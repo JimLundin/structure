@@ -164,16 +164,13 @@ fn test_reference_persistence() {
 
     let (user_id, post_id) = {
         let db = Database::open(&db_path)
-
             .unwrap()
-
             .register::<User>()
-
             .register::<Post>()
-
             .build()
+            .unwrap();
 
-            .unwrap();let user_id = db.insert(User {
+        let user_id = db.insert(User {
             name: "Alice".to_string(),
             age: 30,
         }).unwrap();
@@ -189,16 +186,13 @@ fn test_reference_persistence() {
 
     // Reopen database
     let db = Database::open(&db_path)
-
         .unwrap()
-
         .register::<User>()
-
         .register::<Post>()
-
         .build()
+        .unwrap();
 
-        .unwrap();let post = db.get(post_id).unwrap();
+    let post = db.get(post_id).unwrap();
     let author = post.author.get(&db).unwrap();
 
     assert_eq!(author.name, "Alice");
@@ -311,8 +305,11 @@ fn test_circular_references() {
     }
 
     let temp_dir = TempDir::new().unwrap();
-    let db = Database::open(temp_dir.path()).unwrap();
-    db.register::<Node>();
+    let db = Database::open(temp_dir.path())
+        .unwrap()
+        .register::<Node>()
+        .build()
+        .unwrap();
 
     // Create node without reference first
     let node1_id = db.insert(Node {

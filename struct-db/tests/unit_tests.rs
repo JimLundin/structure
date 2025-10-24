@@ -184,8 +184,11 @@ mod edge_case_tests {
     #[test]
     fn test_empty_database() {
         let temp_dir = TempDir::new().unwrap();
-        let db = Database::open(temp_dir.path()).unwrap();
-        db.register::<User>();
+        let db = Database::open(temp_dir.path())
+            .unwrap()
+            .register::<User>()
+            .build()
+            .unwrap();
 
         let results = db.query::<User>().unwrap().collect();
         assert_eq!(results.len(), 0);
@@ -200,8 +203,11 @@ mod edge_case_tests {
     #[test]
     fn test_empty_strings() {
         let temp_dir = TempDir::new().unwrap();
-        let db = Database::open(temp_dir.path()).unwrap();
-        db.register::<User>();
+        let db = Database::open(temp_dir.path())
+            .unwrap()
+            .register::<User>()
+            .build()
+            .unwrap();
 
         let id = db.insert(User {
             name: "".to_string(),
@@ -214,8 +220,11 @@ mod edge_case_tests {
     #[test]
     fn test_unicode_strings() {
         let temp_dir = TempDir::new().unwrap();
-        let db = Database::open(temp_dir.path()).unwrap();
-        db.register::<User>();
+        let db = Database::open(temp_dir.path())
+            .unwrap()
+            .register::<User>()
+            .build()
+            .unwrap();
 
         let unicode_name = "Hello 世界 🌍 Привет";
         let id = db.insert(User {
@@ -229,8 +238,11 @@ mod edge_case_tests {
     #[test]
     fn test_very_long_strings() {
         let temp_dir = TempDir::new().unwrap();
-        let db = Database::open(temp_dir.path()).unwrap();
-        db.register::<User>();
+        let db = Database::open(temp_dir.path())
+            .unwrap()
+            .register::<User>()
+            .build()
+            .unwrap();
 
         let long_name = "a".repeat(10000);
         let id = db.insert(User {
@@ -244,8 +256,11 @@ mod edge_case_tests {
     #[test]
     fn test_special_characters() {
         let temp_dir = TempDir::new().unwrap();
-        let db = Database::open(temp_dir.path()).unwrap();
-        db.register::<User>();
+        let db = Database::open(temp_dir.path())
+            .unwrap()
+            .register::<User>()
+            .build()
+            .unwrap();
 
         let special_name = "Test\n\r\t\\\"'";
         let id = db.insert(User {
@@ -259,8 +274,11 @@ mod edge_case_tests {
     #[test]
     fn test_large_number_of_records() {
         let temp_dir = TempDir::new().unwrap();
-        let db = Database::open(temp_dir.path()).unwrap();
-        db.register::<User>();
+        let db = Database::open(temp_dir.path())
+            .unwrap()
+            .register::<User>()
+            .build()
+            .unwrap();
 
         let count = 1000;
         for i in 0..count {
@@ -276,8 +294,11 @@ mod edge_case_tests {
     #[test]
     fn test_update_to_same_value() {
         let temp_dir = TempDir::new().unwrap();
-        let db = Database::open(temp_dir.path()).unwrap();
-        db.register::<User>();
+        let db = Database::open(temp_dir.path())
+            .unwrap()
+            .register::<User>()
+            .build()
+            .unwrap();
 
         let id = db.insert(User {
             name: "Alice".to_string(),
@@ -295,8 +316,11 @@ mod edge_case_tests {
     #[test]
     fn test_multiple_updates_same_record() {
         let temp_dir = TempDir::new().unwrap();
-        let db = Database::open(temp_dir.path()).unwrap();
-        db.register::<User>();
+        let db = Database::open(temp_dir.path())
+            .unwrap()
+            .register::<User>()
+            .build()
+            .unwrap();
 
         let id = db.insert(User {
             name: "Alice".to_string(),
@@ -315,8 +339,11 @@ mod edge_case_tests {
     #[test]
     fn test_delete_and_reinsert() {
         let temp_dir = TempDir::new().unwrap();
-        let db = Database::open(temp_dir.path()).unwrap();
-        db.register::<User>();
+        let db = Database::open(temp_dir.path())
+            .unwrap()
+            .register::<User>()
+            .build()
+            .unwrap();
 
         let id1 = db.insert(User {
             name: "Alice".to_string(),
@@ -342,8 +369,11 @@ mod edge_case_tests {
     #[test]
     fn test_query_with_no_matching_results() {
         let temp_dir = TempDir::new().unwrap();
-        let db = Database::open(temp_dir.path()).unwrap();
-        db.register::<User>();
+        let db = Database::open(temp_dir.path())
+            .unwrap()
+            .register::<User>()
+            .build()
+            .unwrap();
 
         db.insert(User {
             name: "Alice".to_string(),
@@ -360,8 +390,11 @@ mod edge_case_tests {
     #[test]
     fn test_filter_with_always_false_predicate() {
         let temp_dir = TempDir::new().unwrap();
-        let db = Database::open(temp_dir.path()).unwrap();
-        db.register::<User>();
+        let db = Database::open(temp_dir.path())
+            .unwrap()
+            .register::<User>()
+            .build()
+            .unwrap();
 
         for i in 0..10 {
             db.insert(User {
@@ -380,8 +413,11 @@ mod edge_case_tests {
     #[test]
     fn test_filter_with_always_true_predicate() {
         let temp_dir = TempDir::new().unwrap();
-        let db = Database::open(temp_dir.path()).unwrap();
-        db.register::<User>();
+        let db = Database::open(temp_dir.path())
+            .unwrap()
+            .register::<User>()
+            .build()
+            .unwrap();
 
         for i in 0..10 {
             db.insert(User {
