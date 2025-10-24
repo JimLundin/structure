@@ -24,10 +24,13 @@ struct Comment {
 
 fn setup_test_db() -> (Database, TempDir) {
     let temp_dir = TempDir::new().unwrap();
-    let db = Database::open(temp_dir.path()).unwrap();
-    db.register:<User>();
-    db.register:<Post>();
-    db.register:<Comment>();
+    let db = Database::open(temp_dir.path())
+        .unwrap()
+        .register::<User>()
+        .register::<Post>()
+        .register::<Comment>()
+        .build()
+        .unwrap();
     (db, temp_dir)
 }
 
@@ -160,11 +163,17 @@ fn test_reference_persistence() {
     let db_path = temp_dir.path().to_path_buf();
 
     let (user_id, post_id) = {
-        let db = Database::open(&db_path).unwrap();
-        db.register:<User>();
-        db.register:<Post>();
+        let db = Database::open(&db_path)
 
-        let user_id = db.insert(User {
+            .unwrap()
+
+            .register::<User>()
+
+            .register::<Post>()
+
+            .build()
+
+            .unwrap();let user_id = db.insert(User {
             name: "Alice".to_string(),
             age: 30,
         }).unwrap();
@@ -179,11 +188,17 @@ fn test_reference_persistence() {
     };
 
     // Reopen database
-    let db = Database::open(&db_path).unwrap();
-    db.register:<User>();
-    db.register:<Post>();
+    let db = Database::open(&db_path)
 
-    let post = db.get(post_id).unwrap();
+        .unwrap()
+
+        .register::<User>()
+
+        .register::<Post>()
+
+        .build()
+
+        .unwrap();let post = db.get(post_id).unwrap();
     let author = post.author.get(&db).unwrap();
 
     assert_eq!(author.name, "Alice");
@@ -224,7 +239,7 @@ fn test_query_with_references() {
 
     // Query posts by Alice
     let alice_posts = db
-        .query::<Post>()
+        .query::<Post>().unwrap()
         .filter(move |p| p.author.id() == alice_id)
         .collect();
 
@@ -297,7 +312,7 @@ fn test_circular_references() {
 
     let temp_dir = TempDir::new().unwrap();
     let db = Database::open(temp_dir.path()).unwrap();
-    db.register:<Node>();
+    db.register::<Node>();
 
     // Create node without reference first
     let node1_id = db.insert(Node {

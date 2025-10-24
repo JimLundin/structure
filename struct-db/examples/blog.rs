@@ -47,11 +47,11 @@ fn main() -> anyhow::Result<()> {
 
     // Setup database
     let db = Database::open("./data/blog")?;
-    db.register:<Author>();
-    db.register:<Post>();
-    db.register:<Comment>();
-    db.register:<Tag>();
-    db.register:<PostTag>();
+    db.register:::<Author>();
+    db.register:::<Post>();
+    db.register:::<Comment>();
+    db.register:::<Tag>();
+    db.register:::<PostTag>();
 
     println!("1. Creating authors...");
     let alice = db.insert(Author {

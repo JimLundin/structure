@@ -1,6 +1,5 @@
 use struct_db::{Database, Table};
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
 use tempfile::TempDir;
 
 #[derive(Table, Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -28,14 +27,20 @@ fn test_persistence_insert() {
     };
 
     let id = {
-        let db = Database::open(&db_path).unwrap();
-        db.register:<User>();
+        let db = Database::open(&db_path)
+            .unwrap()
+            .register::<User>()
+            .build()
+            .unwrap();
         db.insert(user.clone()).unwrap()
     }; // Database drops here
 
     // Reopen database
-    let db = Database::open(&db_path).unwrap();
-    db.register:<User>();
+    let db = Database::open(&db_path)
+        .unwrap()
+        .register::<User>()
+        .build()
+        .unwrap();
 
     let retrieved = db.get(id).unwrap();
     assert_eq!(retrieved, user);
@@ -47,8 +52,11 @@ fn test_persistence_multiple_operations() {
     let db_path = temp_dir.path().to_path_buf();
 
     let (id1, id2, id3) = {
-        let db = Database::open(&db_path).unwrap();
-        db.register:<User>();
+        let db = Database::open(&db_path)
+            .unwrap()
+            .register::<User>()
+            .build()
+            .unwrap();
 
         let id1 = db.insert(User {
             name: "Alice".to_string(),
@@ -72,8 +80,11 @@ fn test_persistence_multiple_operations() {
     };
 
     // Reopen and verify
-    let db = Database::open(&db_path).unwrap();
-    db.register:<User>();
+    let db = Database::open(&db_path)
+        .unwrap()
+        .register::<User>()
+        .build()
+        .unwrap();
 
     let user1 = db.get(id1).unwrap();
     let user2 = db.get(id2).unwrap();
@@ -90,8 +101,11 @@ fn test_persistence_update() {
     let db_path = temp_dir.path().to_path_buf();
 
     let id = {
-        let db = Database::open(&db_path).unwrap();
-        db.register:<User>();
+        let db = Database::open(&db_path)
+            .unwrap()
+            .register::<User>()
+            .build()
+            .unwrap();
 
         let id = db.insert(User {
             name: "Alice".to_string(),
@@ -108,8 +122,11 @@ fn test_persistence_update() {
     };
 
     // Reopen and verify update persisted
-    let db = Database::open(&db_path).unwrap();
-    db.register:<User>();
+    let db = Database::open(&db_path)
+        .unwrap()
+        .register::<User>()
+        .build()
+        .unwrap();
 
     let user = db.get(id).unwrap();
     assert_eq!(user.age, 31);
@@ -122,8 +139,11 @@ fn test_persistence_delete() {
     let db_path = temp_dir.path().to_path_buf();
 
     let (id1, id2) = {
-        let db = Database::open(&db_path).unwrap();
-        db.register:<User>();
+        let db = Database::open(&db_path)
+            .unwrap()
+            .register::<User>()
+            .build()
+            .unwrap();
 
         let id1 = db.insert(User {
             name: "Alice".to_string(),
@@ -143,8 +163,11 @@ fn test_persistence_delete() {
     };
 
     // Reopen and verify delete persisted
-    let db = Database::open(&db_path).unwrap();
-    db.register:<User>();
+    let db = Database::open(&db_path)
+        .unwrap()
+        .register::<User>()
+        .build()
+        .unwrap();
 
     assert!(db.get(id1).is_err());
     assert!(db.get(id2).is_ok());
@@ -156,9 +179,12 @@ fn test_persistence_multiple_tables() {
     let db_path = temp_dir.path().to_path_buf();
 
     let (user_id, product_id) = {
-        let db = Database::open(&db_path).unwrap();
-        db.register:<User>();
-        db.register:<Product>();
+        let db = Database::open(&db_path)
+            .unwrap()
+            .register::<User>()
+            .register::<Product>()
+            .build()
+            .unwrap();
 
         let user_id = db.insert(User {
             name: "Alice".to_string(),
@@ -175,9 +201,12 @@ fn test_persistence_multiple_tables() {
     };
 
     // Reopen and verify both tables persisted
-    let db = Database::open(&db_path).unwrap();
-    db.register:<User>();
-    db.register:<Product>();
+    let db = Database::open(&db_path)
+        .unwrap()
+        .register::<User>()
+        .register::<Product>()
+        .build()
+        .unwrap();
 
     let user = db.get(user_id).unwrap();
     let product = db.get(product_id).unwrap();
@@ -191,8 +220,11 @@ fn test_compact_reduces_wal_size() {
     let temp_dir = TempDir::new().unwrap();
     let db_path = temp_dir.path().to_path_buf();
 
-    let db = Database::open(&db_path).unwrap();
-    db.register:<User>();
+    let db = Database::open(&db_path)
+        .unwrap()
+        .register::<User>()
+        .build()
+        .unwrap();
 
     // Insert and delete many records
     for i in 0..100 {
@@ -225,8 +257,11 @@ fn test_compact_preserves_data() {
     let temp_dir = TempDir::new().unwrap();
     let db_path = temp_dir.path().to_path_buf();
 
-    let db = Database::open(&db_path).unwrap();
-    db.register:<User>();
+    let db = Database::open(&db_path)
+        .unwrap()
+        .register::<User>()
+        .build()
+        .unwrap();
 
     // Insert data
     let id1 = db.insert(User {
@@ -272,8 +307,11 @@ fn test_persistence_after_compact() {
     let db_path = temp_dir.path().to_path_buf();
 
     let (id1, id2, id3) = {
-        let db = Database::open(&db_path).unwrap();
-        db.register:<User>();
+        let db = Database::open(&db_path)
+            .unwrap()
+            .register::<User>()
+            .build()
+            .unwrap();
 
         let id1 = db.insert(User {
             name: "Alice".to_string(),
@@ -303,8 +341,11 @@ fn test_persistence_after_compact() {
     }; // Drop database
 
     // Reopen and verify compacted data persisted correctly
-    let db = Database::open(&db_path).unwrap();
-    db.register:<User>();
+    let db = Database::open(&db_path)
+        .unwrap()
+        .register::<User>()
+        .build()
+        .unwrap();
 
     let user1 = db.get(id1).unwrap();
     let user2 = db.get(id2).unwrap();
@@ -321,8 +362,11 @@ fn test_query_after_reload() {
     let db_path = temp_dir.path().to_path_buf();
 
     {
-        let db = Database::open(&db_path).unwrap();
-        db.register:<User>();
+        let db = Database::open(&db_path)
+            .unwrap()
+            .register::<User>()
+            .build()
+            .unwrap();
 
         db.insert(User {
             name: "Alice".to_string(),
@@ -344,13 +388,16 @@ fn test_query_after_reload() {
     }
 
     // Reopen and query
-    let db = Database::open(&db_path).unwrap();
-    db.register:<User>();
+    let db = Database::open(&db_path)
+        .unwrap()
+        .register::<User>()
+        .build()
+        .unwrap();
 
     let results = db
-        .query::<User>()
+        .query::<User>().unwrap()
         .filter(|u| u.age >= 30)
-        .sort_by(|u| u.age)
+        .sort_by_key(|u| &u.age)
         .collect();
 
     assert_eq!(results.len(), 2);
@@ -364,15 +411,21 @@ fn test_empty_database_persistence() {
     let db_path = temp_dir.path().to_path_buf();
 
     {
-        let db = Database::open(&db_path).unwrap();
-        db.register:<User>();
+        let db = Database::open(&db_path)
+            .unwrap()
+            .register::<User>()
+            .build()
+            .unwrap();
         // Don't insert anything
     }
 
     // Reopen
-    let db = Database::open(&db_path).unwrap();
-    db.register:<User>();
+    let db = Database::open(&db_path)
+        .unwrap()
+        .register::<User>()
+        .build()
+        .unwrap();
 
-    let results = db.query::<User>().collect();
+    let results = db.query::<User>().unwrap().collect();
     assert_eq!(results.len(), 0);
 }

@@ -15,7 +15,7 @@ fn main() -> anyhow::Result<()> {
     // 1. Open database
     println!("1. Opening database...");
     let db = Database::open("./data/basic_crud")?
-        .register:<User>()
+        .register::<User>()
         .build()?;
     println!("   Database opened successfully\n");
 
@@ -149,7 +149,7 @@ fn main() -> anyhow::Result<()> {
 
     println!("   Reopening database...");
     let db = Database::open("./data/basic_crud")?
-        .register:<User>()
+        .register::<User>()
         .build()?;
 
     let reloaded_users = db.query::<User>()??collect();

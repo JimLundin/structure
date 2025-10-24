@@ -60,8 +60,13 @@ fn test_concurrent_reads() {
 #[test]
 fn test_concurrent_inserts() {
     let temp_dir = TempDir::new().unwrap();
-    let db = Arc::new(Database::open(temp_dir.path()).unwrap());
-    db.register:<User>();
+    let db = Arc::new(
+        Database::open(temp_dir.path())
+            .unwrap()
+            .register::<User>()
+            .build()
+            .unwrap()
+    );
 
     let mut handles = vec![];
 
@@ -109,7 +114,7 @@ fn test_concurrent_inserts() {
 fn test_concurrent_updates() {
     let temp_dir = TempDir::new().unwrap();
     let db = Arc::new(Database::open(temp_dir.path()).unwrap());
-    db.register:<Counter>();
+    db.register::<Counter>();
 
     // Insert a counter
     let id = db.insert(Counter { value: 0 }).unwrap();
@@ -146,7 +151,7 @@ fn test_concurrent_updates() {
 fn test_concurrent_mixed_operations() {
     let temp_dir = TempDir::new().unwrap();
     let db = Arc::new(Database::open(temp_dir.path()).unwrap());
-    db.register:<User>();
+    db.register::<User>();
 
     // Insert some initial data
     let id = db.insert(User {
@@ -211,7 +216,7 @@ fn test_concurrent_mixed_operations() {
     let user = db.get(id).unwrap();
     assert_eq!(user.name, "Alice");
 
-    let all_users = db.query::<User>().collect();
+    let all_users = db.query::<User>().unwrap().collect();
     assert_eq!(all_users.len(), 21); // 1 original + 20 inserted
 }
 
@@ -219,7 +224,7 @@ fn test_concurrent_mixed_operations() {
 fn test_concurrent_queries() {
     let temp_dir = TempDir::new().unwrap();
     let db = Arc::new(Database::open(temp_dir.path()).unwrap());
-    db.register:<User>();
+    db.register::<User>();
 
     // Insert test data
     for i in 0..50 {
@@ -238,7 +243,7 @@ fn test_concurrent_queries() {
         let handle = thread::spawn(move || {
             for _ in 0..20 {
                 let results = db_clone
-                    .query::<User>()
+                    .query::<User>().unwrap()
                     .filter(|u| u.age > 30)
                     .collect();
 
@@ -259,7 +264,7 @@ fn test_concurrent_queries() {
 fn test_concurrent_delete_and_read() {
     let temp_dir = TempDir::new().unwrap();
     let db = Arc::new(Database::open(temp_dir.path()).unwrap());
-    db.register:<User>();
+    db.register::<User>();
 
     // Insert many records
     let mut ids = vec![];
@@ -321,7 +326,7 @@ fn test_concurrent_delete_and_read() {
 fn test_concurrent_query_and_insert() {
     let temp_dir = TempDir::new().unwrap();
     let db = Arc::new(Database::open(temp_dir.path()).unwrap());
-    db.register:<User>();
+    db.register::<User>();
 
     // Insert initial data
     for i in 0..20 {
@@ -339,7 +344,7 @@ fn test_concurrent_query_and_insert() {
 
         let handle = thread::spawn(move || {
             for _ in 0..30 {
-                let results = db_clone.query::<User>().collect();
+                let results = db_clone.query::<User>().unwrap().collect();
                 assert!(results.len() >= 20); // At least the initial records
             }
         });
@@ -369,6 +374,6 @@ fn test_concurrent_query_and_insert() {
     }
 
     // Verify final count
-    let all_users = db.query::<User>().collect();
+    let all_users = db.query::<User>().unwrap().collect();
     assert_eq!(all_users.len(), 70); // 20 initial + 50 new
 }

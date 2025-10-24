@@ -1,6 +1,5 @@
 use struct_db::{Database, Id, Table};
 use serde::{Deserialize, Serialize};
-use std::fs;
 use tempfile::TempDir;
 
 #[derive(Table, Serialize, Deserialize, Clone, Debug, PartialEq)]
