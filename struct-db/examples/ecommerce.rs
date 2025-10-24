@@ -152,7 +152,7 @@ fn main() -> anyhow::Result<()> {
     println!("5. Finding all items in an order...");
     let order1_items = db
         .query::<OrderItem>()?
-        .filter(|item| item.order.id() == order1)
+        .filter(move |item| item.order.id() == order1)
         .collect();
 
     println!("   Order {} contains {} items:", order1, order1_items.len());
@@ -166,7 +166,7 @@ fn main() -> anyhow::Result<()> {
     println!("6. Finding all orders for a customer...");
     let sarah_orders = db
         .query::<Order>()?
-        .filter(|order| order.customer.id() == customer1)
+        .filter(move |order| order.customer.id() == customer1)
         .collect();
 
     println!("   Sarah Connor has {} orders:", sarah_orders.len());

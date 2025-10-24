@@ -204,7 +204,7 @@ fn main() -> anyhow::Result<()> {
     println!("7. Finding posts by author...");
     let alice_posts = db
         .query::<Post>()?
-        .filter(|p| p.author.id() == alice)
+        .filter(move |p| p.author.id() == alice)
         .collect();
 
     let author_info = db.get(alice)?;
@@ -217,7 +217,7 @@ fn main() -> anyhow::Result<()> {
     println!("8. Finding posts with a specific tag...");
     let rust_tagged = db
         .query::<PostTag>()?
-        .filter(|pt| pt.tag.id() == rust_tag)
+        .filter(move |pt| pt.tag.id() == rust_tag)
         .collect();
 
     println!("   Posts tagged with 'Rust':");
@@ -230,7 +230,7 @@ fn main() -> anyhow::Result<()> {
     println!("9. Finding comments on a specific post...");
     let post1_comments = db
         .query::<Comment>()?
-        .filter(|c| c.post.id() == post1)
+        .filter(move |c| c.post.id() == post1)
         .sort_by_key(|c| &c.created_at)
         .collect();
 
@@ -287,7 +287,7 @@ fn main() -> anyhow::Result<()> {
     println!("12. Finding all tags for a post...");
     let post2_tags = db
         .query::<PostTag>()?
-        .filter(|pt| pt.post.id() == post2)
+        .filter(move |pt| pt.post.id() == post2)
         .collect();
 
     let post2_info = db.get(post2)?;
@@ -328,7 +328,7 @@ fn main() -> anyhow::Result<()> {
     println!("15. Complex query: Popular published Rust tutorials...");
     let rust_posts_ids: Vec<Id<Post>> = db
         .query::<PostTag>()?
-        .filter(|pt| pt.tag.id() == rust_tag || pt.tag.id() == tutorial_tag)
+        .filter(move |pt| pt.tag.id() == rust_tag || pt.tag.id() == tutorial_tag)
         .collect()
         .iter()
         .map(|(_, pt)| pt.post.id())
@@ -336,7 +336,7 @@ fn main() -> anyhow::Result<()> {
 
     let popular_rust_tutorials = db
         .query::<Post>()?
-        .filter(|p| p.published && p.views > 1000 && rust_posts_ids.contains(&Id::from(0)))
+        .filter(move |p| p.published && p.views > 1000 && rust_posts_ids.contains(&Id::from(0)))
         .collect();
 
     println!("   Found {} matching posts:", popular_rust_tutorials.len());
