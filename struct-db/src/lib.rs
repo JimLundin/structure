@@ -1,4 +1,5 @@
 mod database;
+mod error;
 mod id;
 mod reference;
 mod table;
@@ -6,7 +7,8 @@ mod query;
 mod wal;
 mod serialization;
 
-pub use database::Database;
+pub use database::{Database, DatabaseBuilder};
+pub use error::{Error, Result};
 pub use id::Id;
 pub use reference::Ref;
 pub use query::Query;
@@ -23,6 +25,3 @@ pub trait TableType: serde::Serialize + serde::de::DeserializeOwned + Send + Syn
     /// Unique type identifier for serialization
     fn type_name() -> &'static str;
 }
-
-/// Result type for database operations
-pub type Result<T> = anyhow::Result<T>;

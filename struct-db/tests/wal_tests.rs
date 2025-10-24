@@ -31,7 +31,7 @@ fn test_wal_grows_with_operations() {
     let wal_path = db_path.join("wal.log");
 
     let db = Database::open(&db_path).unwrap();
-    db.register_type::<TestRecord>();
+    db.register:<TestRecord>();
 
     // Initial size (should be 0 or very small)
     let initial_size = fs::metadata(&wal_path).unwrap().len();
@@ -53,7 +53,7 @@ fn test_wal_records_all_operations() {
     let wal_path = db_path.join("wal.log");
 
     let db = Database::open(&db_path).unwrap();
-    db.register_type::<TestRecord>();
+    db.register:<TestRecord>();
 
     let size_after_open = fs::metadata(&wal_path).unwrap().len();
 
@@ -87,7 +87,7 @@ fn test_wal_replay_on_restart() {
 
     let id = {
         let db = Database::open(&db_path).unwrap();
-        db.register_type::<TestRecord>();
+        db.register:<TestRecord>();
 
         db.insert(TestRecord {
             value: "initial".to_string(),
@@ -96,9 +96,9 @@ fn test_wal_replay_on_restart() {
 
     // Reopen - WAL should be replayed
     let db = Database::open(&db_path).unwrap();
-    db.register_type::<TestRecord>();
+    db.register:<TestRecord>();
 
-    let record = db.get_cloned(id).unwrap();
+    let record = db.get(id).unwrap();
     assert_eq!(record.value, "initial");
 }
 
@@ -109,7 +109,7 @@ fn test_wal_replay_preserves_order() {
 
     let id = {
         let db = Database::open(&db_path).unwrap();
-        db.register_type::<TestRecord>();
+        db.register:<TestRecord>();
 
         let id = db.insert(TestRecord {
             value: "v1".to_string(),
@@ -128,9 +128,9 @@ fn test_wal_replay_preserves_order() {
 
     // Reopen - should have final value
     let db = Database::open(&db_path).unwrap();
-    db.register_type::<TestRecord>();
+    db.register:<TestRecord>();
 
-    let record = db.get_cloned(id).unwrap();
+    let record = db.get(id).unwrap();
     assert_eq!(record.value, "v3");
 }
 
@@ -141,7 +141,7 @@ fn test_wal_replay_with_deletes() {
 
     let (id1, id2) = {
         let db = Database::open(&db_path).unwrap();
-        db.register_type::<TestRecord>();
+        db.register:<TestRecord>();
 
         let id1 = db.insert(TestRecord {
             value: "record1".to_string(),
@@ -158,13 +158,13 @@ fn test_wal_replay_with_deletes() {
 
     // Reopen
     let db = Database::open(&db_path).unwrap();
-    db.register_type::<TestRecord>();
+    db.register:<TestRecord>();
 
     // id1 should not exist
-    assert!(db.get_cloned(id1).is_err());
+    assert!(db.get(id1).is_err());
 
     // id2 should exist
-    let record2 = db.get_cloned(id2).unwrap();
+    let record2 = db.get(id2).unwrap();
     assert_eq!(record2.value, "record2");
 }
 
@@ -174,7 +174,7 @@ fn test_wal_compact_creates_temp_file() {
     let db_path = temp_dir.path().to_path_buf();
 
     let db = Database::open(&db_path).unwrap();
-    db.register_type::<TestRecord>();
+    db.register:<TestRecord>();
 
     // Insert some data
     for i in 0..10 {
@@ -199,7 +199,7 @@ fn test_wal_survives_multiple_restarts() {
     // First session - insert
     let id = {
         let db = Database::open(&db_path).unwrap();
-        db.register_type::<TestRecord>();
+        db.register:<TestRecord>();
         db.insert(TestRecord {
             value: "v1".to_string(),
         }).unwrap()
@@ -208,7 +208,7 @@ fn test_wal_survives_multiple_restarts() {
     // Second session - update
     {
         let db = Database::open(&db_path).unwrap();
-        db.register_type::<TestRecord>();
+        db.register:<TestRecord>();
         db.update(id, |r: &mut TestRecord| {
             r.value = "v2".to_string();
         }).unwrap();
@@ -217,7 +217,7 @@ fn test_wal_survives_multiple_restarts() {
     // Third session - update again
     {
         let db = Database::open(&db_path).unwrap();
-        db.register_type::<TestRecord>();
+        db.register:<TestRecord>();
         db.update(id, |r: &mut TestRecord| {
             r.value = "v3".to_string();
         }).unwrap();
@@ -225,9 +225,9 @@ fn test_wal_survives_multiple_restarts() {
 
     // Fourth session - verify
     let db = Database::open(&db_path).unwrap();
-    db.register_type::<TestRecord>();
+    db.register:<TestRecord>();
 
-    let record = db.get_cloned(id).unwrap();
+    let record = db.get(id).unwrap();
     assert_eq!(record.value, "v3");
 }
 
@@ -238,7 +238,7 @@ fn test_wal_with_many_operations() {
 
     let ids = {
         let db = Database::open(&db_path).unwrap();
-        db.register_type::<TestRecord>();
+        db.register:<TestRecord>();
 
         let mut ids = vec![];
         for i in 0..100 {
@@ -269,14 +269,14 @@ fn test_wal_with_many_operations() {
 
     // Reopen and verify
     let db = Database::open(&db_path).unwrap();
-    db.register_type::<TestRecord>();
+    db.register:<TestRecord>();
 
     for (i, &id) in ids.iter().enumerate() {
         if i % 3 == 0 {
             // Should be deleted
-            assert!(db.get_cloned(id).is_err());
+            assert!(db.get(id).is_err());
         } else {
-            let record = db.get_cloned(id).unwrap();
+            let record = db.get(id).unwrap();
             if i % 2 == 0 {
                 assert_eq!(record.value, format!("updated{}", i));
             } else {
@@ -294,12 +294,12 @@ fn test_wal_empty_database_restart() {
     // Create database but don't insert anything
     {
         let db = Database::open(&db_path).unwrap();
-        db.register_type::<TestRecord>();
+        db.register:<TestRecord>();
     }
 
     // Reopen
     let db = Database::open(&db_path).unwrap();
-    db.register_type::<TestRecord>();
+    db.register:<TestRecord>();
 
     let results = db.query::<TestRecord>().collect();
     assert_eq!(results.len(), 0);
@@ -312,7 +312,7 @@ fn test_wal_with_large_records() {
 
     let id = {
         let db = Database::open(&db_path).unwrap();
-        db.register_type::<TestRecord>();
+        db.register:<TestRecord>();
 
         // Insert a large record
         let large_value = "x".repeat(100_000);
@@ -323,9 +323,9 @@ fn test_wal_with_large_records() {
 
     // Reopen and verify
     let db = Database::open(&db_path).unwrap();
-    db.register_type::<TestRecord>();
+    db.register:<TestRecord>();
 
-    let record = db.get_cloned(id).unwrap();
+    let record = db.get(id).unwrap();
     assert_eq!(record.value.len(), 100_000);
 }
 
@@ -336,7 +336,7 @@ fn test_wal_after_compact_persists() {
 
     let (id1, id2) = {
         let db = Database::open(&db_path).unwrap();
-        db.register_type::<TestRecord>();
+        db.register:<TestRecord>();
 
         let id1 = db.insert(TestRecord {
             value: "record1".to_string(),
@@ -354,10 +354,10 @@ fn test_wal_after_compact_persists() {
 
     // Reopen after compact
     let db = Database::open(&db_path).unwrap();
-    db.register_type::<TestRecord>();
+    db.register:<TestRecord>();
 
-    let record1 = db.get_cloned(id1).unwrap();
-    let record2 = db.get_cloned(id2).unwrap();
+    let record1 = db.get(id1).unwrap();
+    let record2 = db.get(id2).unwrap();
 
     assert_eq!(record1.value, "record1");
     assert_eq!(record2.value, "record2");
@@ -369,7 +369,7 @@ fn test_wal_operations_after_compact() {
     let db_path = temp_dir.path().to_path_buf();
 
     let db = Database::open(&db_path).unwrap();
-    db.register_type::<TestRecord>();
+    db.register:<TestRecord>();
 
     // Insert and compact
     let id1 = db.insert(TestRecord {
@@ -389,8 +389,8 @@ fn test_wal_operations_after_compact() {
     }).unwrap();
 
     // Verify
-    let record1 = db.get_cloned(id1).unwrap();
-    let record2 = db.get_cloned(id2).unwrap();
+    let record1 = db.get(id1).unwrap();
+    let record2 = db.get(id2).unwrap();
 
     assert_eq!(record1.value, "updated_after_compact");
     assert_eq!(record2.value, "after_compact");

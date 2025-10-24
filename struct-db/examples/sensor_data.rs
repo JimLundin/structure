@@ -30,9 +30,9 @@ fn main() -> anyhow::Result<()> {
     let db = Database::open("./data/sensor_db")?;
 
     // Register types for WAL replay
-    db.register_type::<Sensor>();
-    db.register_type::<Reading>();
-    db.register_type::<Alert>();
+    db.register:<Sensor>();
+    db.register:<Reading>();
+    db.register:<Alert>();
 
     println!("1. Inserting sensors...");
 

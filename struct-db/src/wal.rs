@@ -108,4 +108,44 @@ impl Wal {
 
         Ok(())
     }
+
+    /// Compact the WAL atomically using custom temp and target paths
+    ///
+    /// This operation:
+    /// - Writes to temp_path
+    /// - Atomically renames to target_path
+    /// - Is crash-safe (old WAL preserved until success)
+    pub fn compact_atomic(&self, temp_path: &Path, target_path: &Path, entries: &[WalEntry]) -> crate::Result<()> {
+        // Write to temporary file
+        let temp_file = OpenOptions::new()
+            .create(true)
+            .write(true)
+            .truncate(true)
+            .open(temp_path)?;
+
+        let mut writer = BufWriter::new(temp_file);
+
+        for entry in entries {
+            let serialized = bincode::serialize(entry)?;
+            let len = serialized.len() as u32;
+            writer.write_all(&len.to_le_bytes())?;
+            writer.write_all(&serialized)?;
+        }
+
+        writer.flush()?;
+        drop(writer);
+
+        // Atomic rename
+        std::fs::rename(temp_path, target_path)?;
+
+        // Reopen the file for appending
+        let file = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(target_path)?;
+
+        *self.writer.lock() = BufWriter::new(file);
+
+        Ok(())
+    }
 }

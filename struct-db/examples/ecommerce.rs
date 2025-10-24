@@ -40,10 +40,10 @@ fn main() -> anyhow::Result<()> {
 
     // Setup database
     let db = Database::open("./data/ecommerce")?;
-    db.register_type::<Customer>();
-    db.register_type::<Product>();
-    db.register_type::<Order>();
-    db.register_type::<OrderItem>();
+    db.register:<Customer>();
+    db.register:<Product>();
+    db.register:<Order>();
+    db.register:<OrderItem>();
 
     println!("1. Adding customers...");
     let customer1 = db.insert(Customer {

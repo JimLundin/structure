@@ -29,15 +29,15 @@ fn test_persistence_insert() {
 
     let id = {
         let db = Database::open(&db_path).unwrap();
-        db.register_type::<User>();
+        db.register:<User>();
         db.insert(user.clone()).unwrap()
     }; // Database drops here
 
     // Reopen database
     let db = Database::open(&db_path).unwrap();
-    db.register_type::<User>();
+    db.register:<User>();
 
-    let retrieved = db.get_cloned(id).unwrap();
+    let retrieved = db.get(id).unwrap();
     assert_eq!(retrieved, user);
 }
 
@@ -48,7 +48,7 @@ fn test_persistence_multiple_operations() {
 
     let (id1, id2, id3) = {
         let db = Database::open(&db_path).unwrap();
-        db.register_type::<User>();
+        db.register:<User>();
 
         let id1 = db.insert(User {
             name: "Alice".to_string(),
@@ -73,11 +73,11 @@ fn test_persistence_multiple_operations() {
 
     // Reopen and verify
     let db = Database::open(&db_path).unwrap();
-    db.register_type::<User>();
+    db.register:<User>();
 
-    let user1 = db.get_cloned(id1).unwrap();
-    let user2 = db.get_cloned(id2).unwrap();
-    let user3 = db.get_cloned(id3).unwrap();
+    let user1 = db.get(id1).unwrap();
+    let user2 = db.get(id2).unwrap();
+    let user3 = db.get(id3).unwrap();
 
     assert_eq!(user1.name, "Alice");
     assert_eq!(user2.name, "Bob");
@@ -91,7 +91,7 @@ fn test_persistence_update() {
 
     let id = {
         let db = Database::open(&db_path).unwrap();
-        db.register_type::<User>();
+        db.register:<User>();
 
         let id = db.insert(User {
             name: "Alice".to_string(),
@@ -109,9 +109,9 @@ fn test_persistence_update() {
 
     // Reopen and verify update persisted
     let db = Database::open(&db_path).unwrap();
-    db.register_type::<User>();
+    db.register:<User>();
 
-    let user = db.get_cloned(id).unwrap();
+    let user = db.get(id).unwrap();
     assert_eq!(user.age, 31);
     assert_eq!(user.email, "alice.new@example.com");
 }
@@ -123,7 +123,7 @@ fn test_persistence_delete() {
 
     let (id1, id2) = {
         let db = Database::open(&db_path).unwrap();
-        db.register_type::<User>();
+        db.register:<User>();
 
         let id1 = db.insert(User {
             name: "Alice".to_string(),
@@ -144,10 +144,10 @@ fn test_persistence_delete() {
 
     // Reopen and verify delete persisted
     let db = Database::open(&db_path).unwrap();
-    db.register_type::<User>();
+    db.register:<User>();
 
-    assert!(db.get_cloned(id1).is_err());
-    assert!(db.get_cloned(id2).is_ok());
+    assert!(db.get(id1).is_err());
+    assert!(db.get(id2).is_ok());
 }
 
 #[test]
@@ -157,8 +157,8 @@ fn test_persistence_multiple_tables() {
 
     let (user_id, product_id) = {
         let db = Database::open(&db_path).unwrap();
-        db.register_type::<User>();
-        db.register_type::<Product>();
+        db.register:<User>();
+        db.register:<Product>();
 
         let user_id = db.insert(User {
             name: "Alice".to_string(),
@@ -176,11 +176,11 @@ fn test_persistence_multiple_tables() {
 
     // Reopen and verify both tables persisted
     let db = Database::open(&db_path).unwrap();
-    db.register_type::<User>();
-    db.register_type::<Product>();
+    db.register:<User>();
+    db.register:<Product>();
 
-    let user = db.get_cloned(user_id).unwrap();
-    let product = db.get_cloned(product_id).unwrap();
+    let user = db.get(user_id).unwrap();
+    let product = db.get(product_id).unwrap();
 
     assert_eq!(user.name, "Alice");
     assert_eq!(product.name, "Laptop");
@@ -192,7 +192,7 @@ fn test_compact_reduces_wal_size() {
     let db_path = temp_dir.path().to_path_buf();
 
     let db = Database::open(&db_path).unwrap();
-    db.register_type::<User>();
+    db.register:<User>();
 
     // Insert and delete many records
     for i in 0..100 {
@@ -226,7 +226,7 @@ fn test_compact_preserves_data() {
     let db_path = temp_dir.path().to_path_buf();
 
     let db = Database::open(&db_path).unwrap();
-    db.register_type::<User>();
+    db.register:<User>();
 
     // Insert data
     let id1 = db.insert(User {
@@ -257,9 +257,9 @@ fn test_compact_preserves_data() {
     db.compact().unwrap();
 
     // Verify all data is still accessible
-    let user1 = db.get_cloned(id1).unwrap();
-    let user2 = db.get_cloned(id2).unwrap();
-    let user3 = db.get_cloned(id3).unwrap();
+    let user1 = db.get(id1).unwrap();
+    let user2 = db.get(id2).unwrap();
+    let user3 = db.get(id3).unwrap();
 
     assert_eq!(user1.age, 31);
     assert_eq!(user2.name, "Bob");
@@ -273,7 +273,7 @@ fn test_persistence_after_compact() {
 
     let (id1, id2, id3) = {
         let db = Database::open(&db_path).unwrap();
-        db.register_type::<User>();
+        db.register:<User>();
 
         let id1 = db.insert(User {
             name: "Alice".to_string(),
@@ -304,11 +304,11 @@ fn test_persistence_after_compact() {
 
     // Reopen and verify compacted data persisted correctly
     let db = Database::open(&db_path).unwrap();
-    db.register_type::<User>();
+    db.register:<User>();
 
-    let user1 = db.get_cloned(id1).unwrap();
-    let user2 = db.get_cloned(id2).unwrap();
-    let user3 = db.get_cloned(id3).unwrap();
+    let user1 = db.get(id1).unwrap();
+    let user2 = db.get(id2).unwrap();
+    let user3 = db.get(id3).unwrap();
 
     assert_eq!(user1.age, 31);
     assert_eq!(user2.name, "Bob");
@@ -322,7 +322,7 @@ fn test_query_after_reload() {
 
     {
         let db = Database::open(&db_path).unwrap();
-        db.register_type::<User>();
+        db.register:<User>();
 
         db.insert(User {
             name: "Alice".to_string(),
@@ -345,7 +345,7 @@ fn test_query_after_reload() {
 
     // Reopen and query
     let db = Database::open(&db_path).unwrap();
-    db.register_type::<User>();
+    db.register:<User>();
 
     let results = db
         .query::<User>()
@@ -365,13 +365,13 @@ fn test_empty_database_persistence() {
 
     {
         let db = Database::open(&db_path).unwrap();
-        db.register_type::<User>();
+        db.register:<User>();
         // Don't insert anything
     }
 
     // Reopen
     let db = Database::open(&db_path).unwrap();
-    db.register_type::<User>();
+    db.register:<User>();
 
     let results = db.query::<User>().collect();
     assert_eq!(results.len(), 0);

@@ -12,8 +12,11 @@ struct User {
 
 fn setup_test_db_with_users() -> (Database, TempDir) {
     let temp_dir = TempDir::new().unwrap();
-    let db = Database::open(temp_dir.path()).unwrap();
-    db.register_type::<User>();
+    let db = Database::open(temp_dir.path())
+        .unwrap()
+        .register::<User>()
+        .build()
+        .unwrap();
 
     // Insert test data
     let users = vec![
@@ -60,7 +63,7 @@ fn setup_test_db_with_users() -> (Database, TempDir) {
 fn test_query_all() {
     let (db, _temp_dir) = setup_test_db_with_users();
 
-    let results = db.query::<User>().collect();
+    let results = db.query::<User>().unwrap().collect();
 
     assert_eq!(results.len(), 5);
 }
@@ -70,7 +73,7 @@ fn test_query_filter_single() {
     let (db, _temp_dir) = setup_test_db_with_users();
 
     let results = db
-        .query::<User>()
+        .query::<User>().unwrap()
         .filter(|u| u.age > 30)
         .collect();
 
@@ -86,7 +89,7 @@ fn test_query_filter_active() {
     let (db, _temp_dir) = setup_test_db_with_users();
 
     let results = db
-        .query::<User>()
+        .query::<User>().unwrap()
         .filter(|u| u.active)
         .collect();
 
@@ -102,7 +105,7 @@ fn test_query_filter_chained() {
     let (db, _temp_dir) = setup_test_db_with_users();
 
     let results = db
-        .query::<User>()
+        .query::<User>().unwrap()
         .filter(|u| u.active)
         .filter(|u| u.age >= 30)
         .collect();
@@ -120,8 +123,8 @@ fn test_query_sort_by_age() {
     let (db, _temp_dir) = setup_test_db_with_users();
 
     let results = db
-        .query::<User>()
-        .sort_by(|u| u.age)
+        .query::<User>().unwrap()
+        .sort_by_key(|u| &u.age)
         .collect();
 
     assert_eq!(results.len(), 5);
@@ -136,8 +139,8 @@ fn test_query_sort_by_name() {
     let (db, _temp_dir) = setup_test_db_with_users();
 
     let results = db
-        .query::<User>()
-        .sort_by(|u| u.name.clone())
+        .query::<User>().unwrap()
+        .sort_by_key(|u| &u.name)
         .collect();
 
     assert_eq!(results.len(), 5);
@@ -152,8 +155,8 @@ fn test_query_sort_by_cmp() {
     let (db, _temp_dir) = setup_test_db_with_users();
 
     let results = db
-        .query::<User>()
-        .sort_by_cmp(|a, b| b.age.cmp(&a.age)) // Descending order
+        .query::<User>().unwrap()
+        .sort_by(|a, b| b.age.cmp(&a.age)) // Descending order
         .collect();
 
     assert_eq!(results.len(), 5);
@@ -168,7 +171,7 @@ fn test_query_limit() {
     let (db, _temp_dir) = setup_test_db_with_users();
 
     let results = db
-        .query::<User>()
+        .query::<User>().unwrap()
         .limit(3)
         .collect();
 
@@ -180,9 +183,9 @@ fn test_query_filter_sort_limit() {
     let (db, _temp_dir) = setup_test_db_with_users();
 
     let results = db
-        .query::<User>()
+        .query::<User>().unwrap()
         .filter(|u| u.active)
-        .sort_by(|u| u.age)
+        .sort_by_key(|u| &u.age)
         .limit(2)
         .collect();
 
@@ -202,7 +205,7 @@ fn test_query_first() {
     let (db, _temp_dir) = setup_test_db_with_users();
 
     let result = db
-        .query::<User>()
+        .query::<User>().unwrap()
         .filter(|u| u.name == "Charlie")
         .first();
 
@@ -216,7 +219,7 @@ fn test_query_first_not_found() {
     let (db, _temp_dir) = setup_test_db_with_users();
 
     let result = db
-        .query::<User>()
+        .query::<User>().unwrap()
         .filter(|u| u.name == "Nonexistent")
         .first();
 
@@ -228,7 +231,7 @@ fn test_query_count() {
     let (db, _temp_dir) = setup_test_db_with_users();
 
     let count = db
-        .query::<User>()
+        .query::<User>().unwrap()
         .filter(|u| u.active)
         .count();
 
@@ -239,7 +242,7 @@ fn test_query_count() {
 fn test_query_count_all() {
     let (db, _temp_dir) = setup_test_db_with_users();
 
-    let count = db.query::<User>().count();
+    let count = db.query::<User>().unwrap().count();
 
     assert_eq!(count, 5);
 }
@@ -249,7 +252,7 @@ fn test_query_empty_result() {
     let (db, _temp_dir) = setup_test_db_with_users();
 
     let results = db
-        .query::<User>()
+        .query::<User>().unwrap()
         .filter(|u| u.age > 100)
         .collect();
 
@@ -261,7 +264,7 @@ fn test_query_complex_filter() {
     let (db, _temp_dir) = setup_test_db_with_users();
 
     let results = db
-        .query::<User>()
+        .query::<User>().unwrap()
         .filter(|u| u.active && u.age >= 30 && u.name.starts_with('C'))
         .collect();
 
@@ -276,7 +279,7 @@ fn test_query_with_limit_zero() {
     let (db, _temp_dir) = setup_test_db_with_users();
 
     let results = db
-        .query::<User>()
+        .query::<User>().unwrap()
         .limit(0)
         .collect();
 
@@ -288,7 +291,7 @@ fn test_query_limit_larger_than_results() {
     let (db, _temp_dir) = setup_test_db_with_users();
 
     let results = db
-        .query::<User>()
+        .query::<User>().unwrap()
         .limit(100)
         .collect();
 
