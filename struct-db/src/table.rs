@@ -8,9 +8,9 @@ pub struct Table<T: TableType> {
     data: Arc<RwLock<TableData<T>>>,
 }
 
-struct TableData<T> {
-    records: HashMap<u64, T>,
-    next_id: u64,
+pub(crate) struct TableData<T> {
+    pub(crate) records: HashMap<u64, T>,
+    pub(crate) next_id: u64,
 }
 
 impl<T: TableType> Table<T> {
@@ -42,7 +42,7 @@ impl<T: TableType> Table<T> {
     }
 
     /// Get a reference to a record by ID (avoids cloning)
-    pub fn get_ref(&self, id: Id<T>) -> Option<parking_lot::RwLockReadGuard<'_, T>> {
+    pub fn get_ref(&self, id: Id<T>) -> Option<parking_lot::MappedRwLockReadGuard<'_, T>> {
         let guard = self.data.read();
         if guard.records.contains_key(&id.value()) {
             Some(parking_lot::RwLockReadGuard::map(guard, |data| {

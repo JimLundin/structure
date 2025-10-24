@@ -36,12 +36,12 @@ impl Database {
     }
 
     /// Get or create a table for type T
-    fn get_table<T: TableType>(&self) -> Arc<RwLock<crate::query::TableData<T>>> {
+    fn get_table<T: TableType>(&self) -> Arc<RwLock<crate::table::TableData<T>>> {
         let type_id = TypeId::of::<T>();
         let mut tables = self.tables.write();
 
         if !tables.contains_key(&type_id) {
-            let table_data = Arc::new(RwLock::new(crate::query::TableData {
+            let table_data = Arc::new(RwLock::new(crate::table::TableData {
                 records: HashMap::new(),
                 next_id: 1,
             }));
@@ -51,7 +51,7 @@ impl Database {
             tables
                 .get(&type_id)
                 .unwrap()
-                .downcast_ref::<Arc<RwLock<crate::query::TableData<T>>>>()
+                .downcast_ref::<Arc<RwLock<crate::table::TableData<T>>>>()
                 .unwrap()
                 .clone()
         }
@@ -214,7 +214,37 @@ impl Database {
     /// Register a type for WAL replay
     pub fn register_type<T: TableType>(&self) {
         // Ensure the table exists
-        self.get_table::<T>();
+        let table = self.get_table::<T>();
+
+        // Check if we've already replayed this type
+        let table_data = table.read();
+        if !table_data.records.is_empty() {
+            // Already has data, skip replay
+            return;
+        }
+        drop(table_data);
+
+        // Replay WAL entries for this type
+        let entries = match self.wal.read_all() {
+            Ok(entries) => entries,
+            Err(_) => return, // If WAL read fails, just return (empty DB)
+        };
+
+        for entry in entries {
+            match entry {
+                WalEntry::Insert { type_name, id, data } if type_name == T::type_name() => {
+                    let _ = self.replay_typed_entry::<T>(id, &data);
+                }
+                WalEntry::Update { type_name, id, data } if type_name == T::type_name() => {
+                    let _ = self.replay_typed_entry::<T>(id, &data);
+                }
+                WalEntry::Delete { type_name, id } if type_name == T::type_name() => {
+                    let mut table_data = table.write();
+                    table_data.records.remove(&id);
+                }
+                _ => {}
+            }
+        }
     }
 
     /// Replay a typed entry (called by user code after registration)

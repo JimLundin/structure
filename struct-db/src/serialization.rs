@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 /// WAL operation entry
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum WalEntry {
     Insert {
         type_name: String,
