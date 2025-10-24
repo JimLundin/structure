@@ -194,14 +194,51 @@ println!("ID: {}", id.value());
 
 ## Examples
 
-See the `examples/` directory for complete examples:
+See the `struct-db/examples/` directory for complete examples demonstrating various use cases:
 
-- `sensor_data.rs`: Sensor readings with relationships
+### Available Examples
 
-Run an example:
+1. **`basic_crud.rs`** - Introduction to basic operations
+   - Creating, reading, updating, and deleting records
+   - Simple queries with filters and sorting
+   - Error handling and data persistence
+   - Perfect starting point for new users
+
+2. **`sensor_data.rs`** - IoT sensor monitoring system
+   - Sensor readings with timestamps
+   - References between readings and sensors
+   - Alerts based on sensor data
+   - Querying time-series data
+
+3. **`ecommerce.rs`** - E-commerce platform
+   - Customers, products, orders, and order items
+   - Complex relationships (many-to-many)
+   - Aggregations (revenue, popular products)
+   - Customer analytics and inventory management
+
+4. **`blog.rs`** - Blog publishing platform
+   - Authors, posts, comments, and tags
+   - Nested relationships (comments → posts → authors)
+   - Many-to-many relationships via join tables
+   - Complex queries (popular posts, author activity)
+
+### Running Examples
+
+Run any example with:
 ```bash
-cargo run --example sensor_data
+cd struct-db
+cargo run --example <example_name>
 ```
+
+For instance:
+```bash
+cargo run --example basic_crud
+cargo run --example sensor_data
+cargo run --example ecommerce
+cargo run --example blog
+```
+
+Each example creates its own database in `./data/<example_name>/` and demonstrates different aspects of the library.
 
 ## License
 
