@@ -1,6 +1,6 @@
 use crate::{Id, TableType};
+use crate::table::TableData;
 use parking_lot::RwLock;
-use std::collections::HashMap;
 use std::sync::Arc;
 
 /// Query builder for type-safe filtering and sorting
@@ -9,12 +9,6 @@ pub struct Query<T: TableType> {
     filters: Vec<Box<dyn Fn(&T) -> bool + Send + Sync>>,
     sort_fn: Option<Box<dyn Fn(&T, &T) -> std::cmp::Ordering + Send + Sync>>,
     limit: Option<usize>,
-}
-
-// Internal table data structure (shared with Table)
-pub(crate) struct TableData<T> {
-    pub(crate) records: HashMap<u64, T>,
-    pub(crate) next_id: u64,
 }
 
 impl<T: TableType> Query<T> {
@@ -37,9 +31,10 @@ impl<T: TableType> Query<T> {
     }
 
     /// Set a sort function
-    pub fn sort_by<F>(mut self, compare: F) -> Self
+    pub fn sort_by<F, K>(mut self, compare: F) -> Self
     where
-        F: Fn(&T) -> String + Send + Sync + 'static,
+        F: Fn(&T) -> K + Send + Sync + 'static,
+        K: Ord,
     {
         self.sort_fn = Some(Box::new(move |a, b| compare(a).cmp(&compare(b))));
         self

@@ -21,11 +21,11 @@ impl<T> Ref<T> {
     }
 
     /// Fetch the referenced record from the database
-    pub fn get<'a>(&self, db: &'a Database) -> crate::Result<&'a T>
+    pub fn get(&self, db: &Database) -> crate::Result<T>
     where
-        T: TableType,
+        T: TableType + Clone,
     {
-        db.get(self.id)
+        db.get_cloned(self.id)
     }
 }
 
